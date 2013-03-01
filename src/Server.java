@@ -174,6 +174,9 @@ public class Server
         if (host == null) return;
 
         host.setTestPhrase(getTestPhrase());
+        for (Student student : _sDatabase) {
+            host.insertIntoDatabase(student.serializeToString());
+        }
     }
 
     @Override
@@ -202,22 +205,72 @@ public class Server
 
     private class QueryCondition
     {
-        public boolean not;
         public Field field;
         public int operator;
         public Object constant;
 
         public QueryCondition()
         {
-            not = false;
             field = null;
             operator = Operator.NONE;
             constant = null;
         }
 
+        private boolean evaluate(String a, String b)
+        {
+            switch (operator) {
+                case Operator.GREATER_OR_EQUAL:
+                    return a.compareTo(b) >= 0;
+                case Operator.LESS_OR_EQUAL:
+                    return a.compareTo(b) <= 0;
+                case Operator.GREATER_THAN:
+                    return a.compareTo(b) > 0;
+                case Operator.LESS_THAN:
+                    return a.compareTo(b) < 0;
+                case Operator.EQUAL:
+                    return a.equals(b);
+                case Operator.NOT_EQUAL:
+                    return !a.equals(b);
+                default:
+                    return false;
+            }
+        }
+
+        private boolean evaluate(Integer a, Integer b)
+        {
+            switch (operator) {
+                case Operator.GREATER_OR_EQUAL:
+                    return a >= b;
+                case Operator.LESS_OR_EQUAL:
+                    return a <= b;
+                case Operator.GREATER_THAN:
+                    return a > b;
+                case Operator.LESS_THAN:
+                    return a < b;
+                case Operator.EQUAL:
+                    return a == b;
+                case Operator.NOT_EQUAL:
+                    return a != b;
+                default:
+                    return false;
+            }
+        }
+
         public boolean evaluate(Student student)
         {
-            return true;
+            Object val;
+            try {
+                val = field.get(student);
+                if (constant instanceof Integer) {
+                    try {
+                        return evaluate(Integer.parseInt(val.toString()), (Integer) constant);
+                    } catch (Exception e) { }
+                }
+
+                return evaluate(val.toString(), constant.toString());
+            } catch (Exception e) {
+                return false;
+            }
         }
     }
 
@@ -227,6 +280,7 @@ public class Server
         try {
             Student student = Student.parse(this, str);
             _sDatabase.add(student);
+            propagate(str);
             return "SUCCESS\n" + student.serializeToString() + "\n";
         } catch (Exception e) {
             return "FAILURE\n";
@@ -254,11 +308,6 @@ public class Server
         while (i < split.length)
         {
             QueryCondition condition = new QueryCondition();
-
-            while (split[i].equals("not") && i < split.length) {
-                condition.not = !condition.not;
-                ++i;
-            }
 
             if (i >= split.length) {
                 return new QueryResponse("expected a field name at argument #{0}", i).serializeToString();

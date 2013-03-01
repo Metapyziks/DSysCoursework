@@ -19,8 +19,6 @@ public class QueryResponse
     {
         this.message = message;
 
-        System.out.println(message);
-
         success = false;
         students = null;
     }
