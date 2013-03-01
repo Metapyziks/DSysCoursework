@@ -1,22 +1,23 @@
-import java.rmi.*;
-import java.rmi.registry.*;
-
 public class Client
     extends Endpoint
 {
-    private Client() { }
-
     public static void main(String[] args)
     {
-        try {
-            Registry registry = LocateRegistry.getRegistry(ADDRESS, PORT);
-            IDatabaseConnection dbcon = (IDatabaseConnection) registry.lookup("DatabaseConnection");
+        String hostsFilePath = args.length > 0 ? args[0] : "../hosts.txt";
 
-            log(dbcon.testMethod());
-        } catch (Exception e) {
-            log("An error has occured:");
-            e.printStackTrace();
+        log("Reading hosts file \"{0}\"", hostsFilePath);
+        Host[] hosts = Host.readFromFile(hostsFilePath);
+        log("Found {0} host definitions", hosts.length);
+
+        for (Host host : hosts) {
+            try {
+                host.connect();
+                log("Connected to {0}", host);
+            } catch (Exception e) {
+                log("Failed to connect to {0}", host);
+            }
         }
-        return;
     }
+
+    private Client() { }
 }

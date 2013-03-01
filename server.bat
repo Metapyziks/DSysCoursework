@@ -1,3 +1,5 @@
+@ECHO off
+
 cd bin
-java Server
+java Server "../hosts.txt" "%1" "%2"
 cd ..
