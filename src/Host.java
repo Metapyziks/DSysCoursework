@@ -25,6 +25,8 @@ public class Host
                 inPart = !inPart;
             } else if (inPart) {
                 parts[part] += c;
+            } else if (c == '#') {
+                break;
             }
         }
 
@@ -80,6 +82,12 @@ public class Host
         _dbcon = (IDatabaseConnection) _registry.lookup("DatabaseConnection");
     }
 
+    public void disconnect()
+    {
+        _registry = null;
+        _dbcon = null;
+    }
+
     public boolean isConnected()
     {
         return _dbcon != null;
@@ -106,22 +114,28 @@ public class Host
             }
         }
 
-        return caller.invoke(_dbcon, args);
+        try {
+            return caller.invoke(_dbcon, args);
+        } catch (InvocationTargetException e) {
+            Throwable targetException = e.getTargetException();
+            if (targetException instanceof RemoteException) {
+                disconnect();
+                throw (RemoteException) targetException;
+            }
+            throw e;
+        }
     }
 
     @Override
     public int getIdentifier()
     {
         try { return (Integer) attemptInvokeRemote(); }
-        catch (Exception e) {
-            e.printStackTrace();
-            return -1;
-        }
+        catch (Exception e) { return -1; }
     }
 
     @Override
     public String toString()
     {
-        return name + "(" + address + ":" + Integer.toString(port) + ")";
+        return name + "@" + address + ":" + Integer.toString(port);
     }
 }

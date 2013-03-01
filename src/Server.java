@@ -78,10 +78,23 @@ public class Server
         try {
             connect(address, port);
             findIdentifier();
-            log("Current master: {0}", getMasterServer());
+            
         } catch (Exception e) {
             log("An {0} has occurred:", e.toString());
             e.printStackTrace();
+        }
+
+        String line;
+        while ((line = readLine()) != null) {
+            if (line.equals("get master")) {
+                log("Finding master...");
+                Host master = getMasterServer();
+                if (master.getIdentifier() == _sIdentifier) {
+                    log("This server is the current master");
+                } else {
+                    log("Current master: {0}", master);
+                }
+            }
         }
     }
 
