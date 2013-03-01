@@ -6,7 +6,8 @@ public class Server
     extends Endpoint
     implements IDatabaseConnection
 {
-    private static Host[] _sHosts;
+    private static Registry _sRegistry;
+    private static Server _sLocalServer;
     private static int _sIdentifier;
 
     private static void connect(String address, int port)
@@ -19,13 +20,25 @@ public class Server
             log("Detected existing RMI registry");
         }
 
-        Registry registry = LocateRegistry.getRegistry(address, port);
+        _sRegistry = LocateRegistry.getRegistry(address, port);
         log("Connected to RMI registry at {0} {1}", address, Integer.toString(port));
 
-        Server server = new Server();
-        IDatabaseConnection dbcon = (IDatabaseConnection) UnicastRemoteObject.exportObject(server, 0);
-        registry.bind("DatabaseConnection", dbcon);
+        _sLocalServer = new Server();
+        IDatabaseConnection dbcon = (IDatabaseConnection) UnicastRemoteObject.exportObject(_sLocalServer, 0);
+        _sRegistry.bind("DatabaseConnection", dbcon);
         log("DatabaseConnection bound to registry");
+    }
+
+    private static void disconnect()
+        throws RemoteException, NotBoundException
+    {
+        _sRegistry.unbind("DatabaseConnection");
+        UnicastRemoteObject.unexportObject(_sLocalServer, true);
+    }
+
+    private static Server getLocalServer()
+    {
+        return _sLocalServer;
     }
 
     private static void findIdentifier()
@@ -33,7 +46,7 @@ public class Server
         log("Polling servers to find identifier...");
 
         int maxID = _sIdentifier = 0;
-        for (Host host : _sHosts) {
+        for (Host host : getHosts()) {
             try {
                 int id = host.getIdentifier();
                 if (id > maxID) maxID = id;
@@ -46,28 +59,9 @@ public class Server
         log("Server identifier: {0}", _sIdentifier);
     }
 
-    private static Host getMasterServer()
-    {
-        Host master = null;
-        int minID = _sIdentifier;
-        for (Host host : _sHosts) {
-            int id = host.getIdentifier();
-            if (id > 0 && id <= minID) {
-                minID = id;
-                master = host;
-            }
-        }
-
-        return master;
-    }
-
     public static void main(String[] args)
     {
-        String hostsFilePath = args.length > 0 ? args[0] : "../hosts.txt";
-
-        log("Reading hosts file \"{0}\"", hostsFilePath);
-        _sHosts = Host.readFromFile(hostsFilePath);
-        log("Found {0} host definitions", _sHosts.length);
+        initializeHosts(args.length > 0 ? args[0] : "../hosts.txt");
 
         String address = "localhost";
         if (args.length > 1 && args[1].length() > 0) address = args[1];
@@ -78,24 +72,13 @@ public class Server
         try {
             connect(address, port);
             findIdentifier();
-            
+            readConsoleInput(getLocalServer());
+            disconnect();
         } catch (Exception e) {
             log("An {0} has occurred:", e.toString());
             e.printStackTrace();
         }
 
-        String line;
-        while ((line = readLine()) != null) {
-            if (line.equals("get master")) {
-                log("Finding master...");
-                Host master = getMasterServer();
-                if (master.getIdentifier() == _sIdentifier) {
-                    log("This server is the current master");
-                } else {
-                    log("Current master: {0}", master);
-                }
-            }
-        }
     }
 
     private Server() { }
