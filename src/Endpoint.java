@@ -102,7 +102,7 @@ public class Endpoint
     {
         Method method;
         try {
-            method = endpoint.getClass().getMethod(command, Endpoint.class, String[].class);
+            method = endpoint.getClass().getMethod("cmd_" + command, Endpoint.class, String[].class);
             if (method.getAnnotation(Command.class) == null) {
                 throw new NoSuchMethodException();
             }
@@ -132,7 +132,7 @@ public class Endpoint
     public @interface Command { }
     
     @Command
-    public static void get(Endpoint endpoint, String[] args)
+    public static void cmd_get(Endpoint endpoint, String[] args)
     {
         if (args.length != 0) {
             invokeCommandMethod(endpoint, "get_" + args[0], Arrays.copyOfRange(args, 1, args.length));
@@ -144,7 +144,7 @@ public class Endpoint
     }
 
     @Command
-    public static void get_master(Endpoint endpoint, String[] args)
+    public static void cmd_get_master(Endpoint endpoint, String[] args)
     {
         log("Finding master...");
         Host master = getMasterServer();
@@ -153,7 +153,7 @@ public class Endpoint
     }
 
     @Command
-    public static void exit(Endpoint endpoint, String[] args)
+    public static void cmd_exit(Endpoint endpoint, String[] args)
     {
         log("Exiting...");
         _sReadInput = false;
