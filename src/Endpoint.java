@@ -53,7 +53,7 @@ public class Endpoint
     {
         Host master = null;
         int minID = Integer.MAX_VALUE;
-        for (Host host : _sHosts) {
+        for (Host host : getHosts()) {
             int id = host.getIdentifier();
             if (id > 0 && id <= minID) {
                 minID = id;
@@ -64,7 +64,27 @@ public class Endpoint
         return master;
     }
 
-    private static String[] splitCommand(String command)
+    public static String joinStringArray(String separator, String[] array, int count)
+    {
+        if (count == 0) return "";
+
+        StringBuffer buffer = new StringBuffer();
+        if (array.length > 0) buffer.append(array[0]);
+
+        for(int i = 1; i < count; ++ i) {
+            buffer.append(separator);
+            if (i < array.length) buffer.append(array[i]);
+        }
+
+        return buffer.toString();
+    }
+
+    public static String joinStringArray(String separator, String[] array)
+    {
+        return joinStringArray(separator, array, array.length);
+    }
+
+    public static String[] splitCommand(String command)
     {
         ArrayList<String> list = new ArrayList<String>();
 
@@ -98,7 +118,7 @@ public class Endpoint
         return arr;
     }
 
-    private static void invokeCommandMethod(Endpoint endpoint, String command, String[] args)
+    private static boolean invokeCommandMethod(Endpoint endpoint, String command, String[] args)
     {
         Method method;
         try {
@@ -107,8 +127,7 @@ public class Endpoint
                 throw new NoSuchMethodException();
             }
         } catch (NoSuchMethodException e) {
-            log("Unrecognised command \"{0}\"", command);
-            return;
+            return false;
         }
 
         try {
@@ -116,43 +135,42 @@ public class Endpoint
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        return true;
     }
 
-    private static void invokeCommandMethod(Endpoint endpoint, String command)
+    private static boolean invokeCommandMethod(Endpoint endpoint, String command)
     {
         String[] split = splitCommand(command);
 
-        if (split.length == 0) return;
+        if (split.length == 0) return true;
         
-        invokeCommandMethod(endpoint, split[0], Arrays.copyOfRange(split, 1, split.length));
+        for (int i = split.length; i > 0; -- i) {
+            if (invokeCommandMethod(endpoint, joinStringArray("_", split, i),
+                Arrays.copyOfRange(split, i, split.length))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
-    public @interface Command { }
-    
-    @Command
-    public static void cmd_get(Endpoint endpoint, String[] args)
-    {
-        if (args.length != 0) {
-            invokeCommandMethod(endpoint, "get_" + args[0], Arrays.copyOfRange(args, 1, args.length));
-            return;
-        }
-
-        log("Usage of command \"get\":");
-        log("- get master        | get the current master server");
+    public @interface Command {
+        String description();
     }
 
-    @Command
+    @Command(description = "prints the name and location of the current master server")
     public static void cmd_get_master(Endpoint endpoint, String[] args)
     {
         log("Finding master...");
         Host master = getMasterServer();
-        log("Current master: {0}", master);
-        return;
+        if (master != null) log("{0}", master);
+        else log("No servers online");
     }
 
-    @Command
+    @Command(description = "closes any active connections and stops the application")
     public static void cmd_exit(Endpoint endpoint, String[] args)
     {
         log("Exiting...");
@@ -166,7 +184,9 @@ public class Endpoint
         System.out.print("> ");
         String line;
         while ((line = readLine()) != null) {
-            invokeCommandMethod(endpoint, line);
+            if (!invokeCommandMethod(endpoint, line)) {
+                log("Unknown command");
+            }
 
             if (_sReadInput) {
                 System.out.print("> ");

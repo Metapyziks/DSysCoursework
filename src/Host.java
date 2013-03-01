@@ -90,10 +90,14 @@ public class Host
 
     public boolean isConnected()
     {
-        return _dbcon != null;
+        try {
+            return _dbcon != null && _dbcon.getIdentifier() > -1;
+        } catch(RemoteException e) {
+            return false;
+        }
     }
 
-    private Object attemptInvokeRemote(Object... args)
+    public <T> T attemptInvokeRemote(int history, Object... args)
         throws RemoteException, IllegalAccessException, InvocationTargetException
     {
         try {
@@ -103,7 +107,7 @@ public class Host
         }
 
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        String callerName = stackTrace[2].getMethodName();
+        String callerName = stackTrace[history + 2].getMethodName();
         Method caller = null;
 
         Method[] methods = _dbcon.getClass().getDeclaredMethods();
@@ -115,7 +119,7 @@ public class Host
         }
 
         try {
-            return caller.invoke(_dbcon, args);
+            return (T) caller.invoke(_dbcon, args);
         } catch (InvocationTargetException e) {
             Throwable targetException = e.getTargetException();
             if (targetException instanceof RemoteException) {
@@ -129,8 +133,36 @@ public class Host
     @Override
     public int getIdentifier()
     {
-        try { return (Integer) attemptInvokeRemote(); }
+        try { return this.<Integer>attemptInvokeRemote(0); }
         catch (Exception e) { return -1; }
+    }
+
+    @Override
+    public String ping()
+    {
+        try { return this.<String>attemptInvokeRemote(0); }
+        catch (Exception e) { return null; }
+    }
+
+    @Override
+    public void requestSync(int identifier)
+    {
+        try { this.<Object>attemptInvokeRemote(0, identifier); }
+        catch (Exception e) { }
+    }
+
+    @Override
+    public String getTestPhrase()
+    {
+        try { return this.<String>attemptInvokeRemote(0); }
+        catch (Exception e) { return null; }
+    }
+
+    @Override
+    public void setTestPhrase(String phrase)
+    {
+        try { this.<Object>attemptInvokeRemote(0, phrase); }
+        catch (Exception e) { }
     }
 
     @Override
