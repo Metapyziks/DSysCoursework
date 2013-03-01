@@ -3,6 +3,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
 
@@ -119,7 +120,7 @@ public class Endpoint
         }
 
         try {
-            method.invoke(null, (Object) split);
+            method.invoke(null, (Object) Arrays.copyOfRange(split, 1, split.length));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -128,9 +129,17 @@ public class Endpoint
     @Command
     public static void get(String[] args)
     {
-        log("Finding master...");
-        Host master = getMasterServer();
-        log("Current master: {0}", master);
+        if (args.length != 0) {
+            if (args[0].equals("master")) {
+                log("Finding master...");
+                Host master = getMasterServer();
+                log("Current master: {0}", master);
+                return;
+            }
+        }
+
+        log("Usage of command \"get\":");
+        log("- get master        | get the current master server");
     }
 
     @Command
