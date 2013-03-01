@@ -9,10 +9,6 @@ import java.lang.reflect.*;
 
 public class Endpoint
 {
-    @Target(ElementType.METHOD)
-    @Retention(RetentionPolicy.RUNTIME)
-    public @interface Command { }
-
     private static boolean _sReadInput;
 
     public static void log(String msg)
@@ -131,6 +127,10 @@ public class Endpoint
         invokeCommandMethod(endpoint, split[0], Arrays.copyOfRange(split, 1, split.length));
     }
 
+    @Target(ElementType.METHOD)
+    @Retention(RetentionPolicy.RUNTIME)
+    public @interface Command { }
+    
     @Command
     public static void get(Endpoint endpoint, String[] args)
     {
