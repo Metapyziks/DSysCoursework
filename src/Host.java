@@ -85,21 +85,6 @@ public class Host
         return _dbcon != null;
     }
 
-    private Method getCallingMethodAnalogue()
-    {
-        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-        String callerName = stackTrace[3].getMethodName();
-
-        Method[] methods = _dbcon.getClass().getDeclaredMethods();
-        for (Method method : methods) {
-            if (method.getName().equals(callerName)) {
-                return method;
-            }
-        }
-
-        return null;
-    }
-
     private Object attemptInvokeRemote(Object... args)
         throws RemoteException, IllegalAccessException, InvocationTargetException
     {
@@ -109,16 +94,29 @@ public class Host
             throw new RemoteException();
         }
 
-        Method method = getCallingMethodAnalogue();
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        String callerName = stackTrace[2].getMethodName();
+        Method caller = null;
 
-        return method.invoke(_dbcon, args);
+        Method[] methods = _dbcon.getClass().getDeclaredMethods();
+        for (Method method : methods) {
+            if (method.getName().equals(callerName)) {
+                caller = method;
+                break;
+            }
+        }
+
+        return caller.invoke(_dbcon, args);
     }
 
     @Override
     public int getIdentifier()
     {
         try { return (Integer) attemptInvokeRemote(); }
-        catch (Exception e) { return -1; }
+        catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 
     @Override
