@@ -2,6 +2,7 @@ import java.rmi.*;
 import java.rmi.registry.*;
 import java.rmi.server.*;
 import java.util.*;
+import java.lang.reflect.*;
 
 public class Server
     extends Endpoint
@@ -13,7 +14,7 @@ public class Server
     private static int _sIdentifier;
     private static String _sTestPhrase;
 
-    private static ArrayList<Student> _database;
+    private static ArrayList<Student> _sDatabase;
 
     private static void connect(String address, int port)
         throws RemoteException, AlreadyBoundException
@@ -127,8 +128,7 @@ public class Server
     public static void main(String[] args)
     {
         _sTestPhrase = "Hello world!";
-
-        _database = new ArrayList<Student>();
+        _sDatabase = new ArrayList<Student>();
 
         initializeDepartments("../departments.txt");
         initializeHosts(args.length > 0 ? args[0] : "../hosts.txt");
@@ -189,9 +189,123 @@ public class Server
         propagate(phrase);
     }
 
+    private class Operator
+    {
+        public static final int NONE = 0;
+        public static final int GREATER_OR_EQUAL = 1;
+        public static final int LESS_OR_EQUAL = 2;
+        public static final int GREATER_THAN = 3;
+        public static final int LESS_THAN = 4;
+        public static final int EQUAL = 5;
+        public static final int NOT_EQUAL = 6;
+    }
+
+    private class QueryCondition
+    {
+        public boolean not;
+        public Field field;
+        public int operator;
+        public Object constant;
+
+        public QueryCondition()
+        {
+            not = false;
+            field = null;
+            operator = Operator.NONE;
+            constant = null;
+        }
+
+        public boolean evaluate(Student student)
+        {
+            return true;
+        }
+    }
+
     @Override
     public String queryDatabase(String query)
     {
-        return null;
+        String[] split = splitCommand(query);
+
+        final String[] validOperators = new String[] {
+            null,  // 0
+            ">=", // 1
+            "<=", // 2
+            ">",  // 3
+            "<",  // 4
+            "==", // 5
+            "!="  // 6
+        };
+
+        ArrayList<QueryCondition> conditions = new ArrayList<QueryCondition>();
+
+        int i = 0;
+        while (i < split.length)
+        {
+            QueryCondition condition = new QueryCondition();
+
+            while (split[i].equals("not") && i < split.length) {
+                condition.not = !condition.not;
+                ++i;
+            }
+
+            if (i >= split.length) {
+                return new QueryResponse("expected a field name at argument #{0}", i).serializeToString();
+            }
+
+            try {
+                condition.field = Student.class.getDeclaredField(split[i]);
+            } catch (Exception e) {
+                return new QueryResponse("invalid field name \"{0}\" at argument #{1}", split[i], i).serializeToString();
+            }
+
+            if (++i >= split.length) {
+                return new QueryResponse("expected an operator at argument #{0}", i).serializeToString();
+            }
+
+            for(int o = 0; o < validOperators.length; ++ o) {
+                if (split[i].equals(validOperators[o])) {
+                    condition.operator = o;
+                    break;
+                }
+            }
+
+            if (condition.operator == Operator.NONE) {
+                return new QueryResponse("invalid operator \"{0}\" at argument #{1}", split[i], i).serializeToString();
+            }
+
+            if (++i >= split.length) {
+                return new QueryResponse("expected a constant value at argument #{0}", i).serializeToString();
+            }
+
+            try {
+                condition.constant = Integer.parseInt(split[i]);
+            } catch (Exception e) {
+                condition.constant = split[i];
+            }
+
+            conditions.add(condition);
+
+            ++i;
+        }
+
+        ArrayList<Student> matches = new ArrayList<Student>();
+
+        for (Student student : _sDatabase) {
+            boolean match = true;
+            for (QueryCondition condition : conditions) {
+                if (!condition.evaluate(student)) {
+                    match = false;
+                    break;
+                }
+            }
+
+            if (match) {
+                matches.add(student);
+            }
+        }
+
+        Student[] arr = new Student[matches.size()];
+        matches.toArray(arr);
+        return new QueryResponse(arr).serializeToString();
     }
 }

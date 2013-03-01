@@ -42,5 +42,16 @@ public class Client
         else log(SERVERS_DOWN_MSG);
     }
 
+    @Command(description="selects all students from the database that match a set of conditions")
+    public static void cmd_select(Endpoint endpoint, String[] args)
+    {
+        Host master = getMasterServer();
+        if (master != null) {
+            String response = master.queryDatabase("\"" + joinStringArray("\" \"", args) + "\"");
+            log(response);
+        }
+        else log(SERVERS_DOWN_MSG);
+    }
+
     private Client() { }
 }

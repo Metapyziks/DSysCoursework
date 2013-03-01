@@ -2,7 +2,7 @@ SRC = \
 	src/StructuredFileReader.java \
 	src/Department.java \
 	src/Student.java \
-	src/Query.java \
+	src/QueryResponse.java \
 	src/IDatabaseConnection.java \
 	src/Host.java \
 	src/Endpoint.java \
@@ -13,7 +13,7 @@ CLASS = \
 	bin/StructuredFileReader.class \
 	bin/Department.class \
 	bin/Student.class \
-	bin/Query.class \
+	src/QueryResponse.java \
 	bin/IDatabaseConnection.class \
 	bin/Host.class \
 	bin/Endpoint.class \

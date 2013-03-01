@@ -30,88 +30,28 @@ public class Student
             department, Integer.parseInt(parsed[4]), Integer.parseInt(parsed[5]));
     }
 
-    private int _identifier;
-    private String _firstName;
-    private String _lastName;
-    private Department _department;
-    private int _year;
-    private int _totalCredit;
+    public int identifier;
+    public String firstName;
+    public String lastName;
+    public Department department;
+    public int year;
+    public int totalCredit;
 
     public Student(int identifier, String firstName, String lastName,
         Department department, int year, int totalCredit)
     {
-        _identifier = identifier;
-        _firstName = firstName;
-        _lastName = lastName;
-        _department = department;
-        _year = year;
-        _totalCredit = totalCredit;
-    }
-
-    public int getIdentifier()
-    {
-        return _identifier;
-    }
-    
-    public void setIdentifier(int value)
-    {
-        _identifier = value;
-    }   
-     
-    public String getFirstName()
-    {
-        return _firstName;
-    }
-    
-    public void setFirstName(String value)
-    {
-        _firstName = value;
-    }   
-     
-    public String getLastName()
-    {
-        return _lastName;
-    }
-    
-    public void setLastName(String value)
-    {
-        _lastName = value;
-    }   
-     
-    public Department getDepartment()
-    {
-        return _department;
-    }
-    
-    public void setDepartment(Department value)
-    {
-        _department = value;
-    }   
-     
-    public int getYear()
-    {
-        return _year;
-    }
-    
-    public void setYear(int value)
-    {
-        _year = value;
-    }   
-     
-    public int getTotalCredits()
-    {
-        return _totalCredit;
-    }
-    
-    public void setTotalCredits(int value)
-    {
-        _totalCredit = value;
+        this.identifier = identifier;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.department = department;
+        this.year = year;
+        this.totalCredit = totalCredit;
     }
 
     public String serializeToString()
     {
         return MessageFormat.format("\"{0}\" \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\"",
-            _identifier, escape(_firstName), escape(_lastName),
-            _department.identifier, _year, _totalCredit);
+            identifier, escape(firstName), escape(lastName),
+            department.identifier, year, totalCredit);
     }
 }
