@@ -36,6 +36,7 @@ public class Endpoint
     }
 
     private static Host[] _sHosts;
+    private static Department[] _sDepartments;
 
     public static void initializeHosts(String filePath)
     {
@@ -44,9 +45,21 @@ public class Endpoint
         log("Found {0} host definitions", _sHosts.length);
     }
 
+    public static void initializeDepartments(String filePath)
+    {
+        log("Reading departments file \"{0}\"", filePath);
+        _sDepartments = Department.readFromFile(filePath);
+        log("Found {0} department definitions", _sDepartments.length);
+    }
+
     public static Host[] getHosts()
     {
         return _sHosts;
+    }
+
+    public static Department[] getDepartments()
+    {
+        return _sDepartments;
     }
 
     public static Host getMasterServer()
@@ -62,6 +75,17 @@ public class Endpoint
         }
 
         return master;
+    }
+
+    public static Department getDepartment(int identifier)
+    {
+        for (int i = 0; i < _sDepartments.length; ++i) {
+            if (_sDepartments[i].identifier == identifier) {
+                return _sDepartments[i];
+            }
+        }
+
+        return null;
     }
 
     public static String joinStringArray(String separator, String[] array, int count)
@@ -158,16 +182,45 @@ public class Endpoint
     @Target(ElementType.METHOD)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Command {
-        String description();
+        String description() default "no description";
+        int minArgs() default 2;
     }
 
     @Command(description = "prints the name and location of the current master server")
     public static void cmd_get_master(Endpoint endpoint, String[] args)
     {
-        log("Finding master...");
         Host master = getMasterServer();
         if (master != null) log("{0}", master);
         else log("No servers online");
+    }
+
+    @Command(description = "gets the name of a department specified by identification number",
+        minArgs = 1)
+    public static void cmd_get_department(Endpoint endpoint, String[] args)
+    {
+        Department department = getDepartment(Integer.parseInt(args[0]));
+        if (department != null) {
+            log(department.name);
+        } else {
+            log("Department with identifier {0} not found");
+        }
+    }
+
+    @Command(description = "lists all known department names by identifier")
+    public static void cmd_get_department_all(Endpoint endpoint, String[] args)
+    {
+        int maxWidth = 0;
+        for (Department dept : _sDepartments) {
+            int width = (int) Math.log10(Math.max(1, dept.identifier)) + 1;
+            if (width > maxWidth) maxWidth = width;
+        }
+
+        for (Department dept : _sDepartments) {
+            int width = (int) Math.log10(Math.max(1, dept.identifier)) + 1;
+            String spaces = "";
+            while (width + spaces.length() < maxWidth) spaces += " ";
+            log("{0}{1} : {2}", spaces, dept.identifier, dept.name);
+        }
     }
 
     @Command(description = "closes any active connections and stops the application")

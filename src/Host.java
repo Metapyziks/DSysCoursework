@@ -7,53 +7,14 @@ import java.util.*;
 public class Host
     implements IDatabaseConnection
 {
-    private static Host parseLine(String line)
-    {
-        String[] parts = new String[] { "", "", "" };
-        int part = 0, i = 0;
-        boolean inPart = false, escaped = false;
-
-        while (part < 3 && i < line.length()) {
-            char c = line.charAt(i++);
-            if (escaped) {
-                if (inPart) parts[part] += c;
-                escaped = false;
-            } else if (c == '\\') {
-                escaped = true;
-            } else if (c == '"') {
-                if (inPart) ++part;
-                inPart = !inPart;
-            } else if (inPart) {
-                parts[part] += c;
-            } else if (c == '#') {
-                break;
-            }
-        }
-
-        if (part < 3) return null;
-
-        return new Host(parts[0], parts[1], Integer.parseInt(parts[2]));
-    }
-
     public static Host[] readFromFile(String filePath)
     {
-        ArrayList<Host> hosts = new ArrayList<Host>();
-
-        try {
-            BufferedReader reader = new BufferedReader(new FileReader(filePath));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                Host host = Host.parseLine(line);
-                if (host != null) {
-                    hosts.add(host);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+        String[][] parsed = StructuredFileReader.readFromFile(filePath, 3);
+        Host[] arr = new Host[parsed.length];
+        
+        for (int i = 0; i < parsed.length; ++ i) {
+            arr[i] = new Host(parsed[i][0], parsed[i][1], Integer.parseInt(parsed[i][2]));
         }
-
-        Host[] arr = new Host[hosts.size()];
-        hosts.toArray(arr);
 
         return arr;
     }
@@ -163,6 +124,13 @@ public class Host
     {
         try { this.<Object>attemptInvokeRemote(0, phrase); }
         catch (Exception e) { }
+    }
+
+    @Override
+    public String queryDatabase(String query)
+    {
+        try { return this.<String>attemptInvokeRemote(0, query); }
+        catch (Exception e) { return null; }
     }
 
     @Override

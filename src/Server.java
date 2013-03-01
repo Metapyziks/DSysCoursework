@@ -1,6 +1,7 @@
 import java.rmi.*;
 import java.rmi.registry.*;
 import java.rmi.server.*;
+import java.util.*;
 
 public class Server
     extends Endpoint
@@ -11,6 +12,8 @@ public class Server
 
     private static int _sIdentifier;
     private static String _sTestPhrase;
+
+    private static ArrayList<Student> _database;
 
     private static void connect(String address, int port)
         throws RemoteException, AlreadyBoundException
@@ -125,6 +128,9 @@ public class Server
     {
         _sTestPhrase = "Hello world!";
 
+        _database = new ArrayList<Student>();
+
+        initializeDepartments("../departments.txt");
         initializeHosts(args.length > 0 ? args[0] : "../hosts.txt");
 
         String address = "localhost";
@@ -143,7 +149,6 @@ public class Server
             log("An {0} has occurred:", e.toString());
             e.printStackTrace();
         }
-
     }
 
     private Server() { }
@@ -163,8 +168,6 @@ public class Server
     @Override
     public void requestSync(int identifier)
     {
-        log("Sync requested by {0}", identifier);
-
         if (identifier == getIdentifier()) return;
 
         Host host = getServer(identifier);
@@ -174,17 +177,21 @@ public class Server
     }
 
     @Override
+    public String getTestPhrase()
+    {
+        return _sTestPhrase;
+    }
+
+    @Override
     public void setTestPhrase(String phrase)
     {
         _sTestPhrase = phrase;
-        log("Test phrase is now \"{0}\"", phrase);
-
         propagate(phrase);
     }
 
     @Override
-    public String getTestPhrase()
+    public String queryDatabase(String query)
     {
-        return _sTestPhrase;
+        return null;
     }
 }

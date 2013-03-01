@@ -5,6 +5,7 @@ public class Client
 
     public static void main(String[] args)
     {
+        initializeDepartments("../departments.txt");
         initializeHosts(args.length > 0 ? args[0] : "../hosts.txt");
 
         Client client = new Client();

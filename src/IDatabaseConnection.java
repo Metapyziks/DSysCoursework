@@ -10,4 +10,6 @@ public interface IDatabaseConnection extends Remote
 
     void setTestPhrase(String phrase) throws RemoteException;
     String getTestPhrase() throws RemoteException;
+
+    String queryDatabase(String query) throws RemoteException;
 }
