@@ -18,7 +18,7 @@ public class Student
         return buffer.toString();
     }
 
-    public static Student parseString(Endpoint endpoint, String str)
+    public static Student parse(Endpoint endpoint, String str)
     {
         String[] parsed = StructuredFileReader.parseLine(str, 6);
 

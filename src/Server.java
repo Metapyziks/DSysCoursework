@@ -222,6 +222,18 @@ public class Server
     }
 
     @Override
+    public String insertIntoDatabase(String str)
+    {
+        try {
+            Student student = Student.parse(this, str);
+            _sDatabase.add(student);
+            return "SUCCESS\n" + student.serializeToString() + "\n";
+        } catch (Exception e) {
+            return "FAILURE\n";
+        }
+    }
+
+    @Override
     public String queryDatabase(String query)
     {
         String[] split = splitCommand(query);

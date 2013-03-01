@@ -127,6 +127,13 @@ public class Host
     }
 
     @Override
+    public String insertIntoDatabase(String student)
+    {
+        try { return this.<String>attemptInvokeRemote(0, student); }
+        catch (Exception e) { return null; }
+    }
+
+    @Override
     public String queryDatabase(String query)
     {
         try { return this.<String>attemptInvokeRemote(0, query); }
