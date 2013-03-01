@@ -35,8 +35,7 @@ public class Server
         int maxID = _sIdentifier = 0;
         for (Host host : _sHosts) {
             try {
-                host.connect();
-                int id = host.getDatabaseConnection().getIdentifier();
+                int id = host.getIdentifier();
                 if (id > maxID) maxID = id;
             } catch (Exception e) {
                 continue;
@@ -45,6 +44,21 @@ public class Server
 
         _sIdentifier = maxID + 1;
         log("Server identifier: {0}", _sIdentifier);
+    }
+
+    private static Host getMasterServer()
+    {
+        Host master = null;
+        int minID = _sIdentifier;
+        for (Host host : _sHosts) {
+            int id = host.getIdentifier();
+            if (id > 0 && id <= minID) {
+                minID = id;
+                master = host;
+            }
+        }
+
+        return master;
     }
 
     public static void main(String[] args)
@@ -64,6 +78,7 @@ public class Server
         try {
             connect(address, port);
             findIdentifier();
+            log("Current master: {0}", getMasterServer());
         } catch (Exception e) {
             log("An {0} has occurred:", e.toString());
             e.printStackTrace();
@@ -76,12 +91,5 @@ public class Server
     public int getIdentifier()
     {
         return _sIdentifier;
-    }
-
-    @Override
-    public String testMethod()
-    {
-        log("testMethod invoked by client");
-        return "Hello world!";
     }
 }

@@ -1,9 +1,11 @@
 import java.io.*;
+import java.lang.reflect.*;
 import java.rmi.*;
 import java.rmi.registry.*;
 import java.util.*;
 
 public class Host
+    implements IDatabaseConnection
 {
     private static Host parseLine(String line)
     {
@@ -78,9 +80,45 @@ public class Host
         _dbcon = (IDatabaseConnection) _registry.lookup("DatabaseConnection");
     }
 
-    public IDatabaseConnection getDatabaseConnection()
+    public boolean isConnected()
     {
-        return _dbcon;
+        return _dbcon != null;
+    }
+
+    private Method getCallingMethodAnalogue()
+    {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        String callerName = stackTrace[3].getMethodName();
+
+        Method[] methods = _dbcon.getClass().getDeclaredMethods();
+        for (Method method : methods) {
+            if (method.getName().equals(callerName)) {
+                return method;
+            }
+        }
+
+        return null;
+    }
+
+    private Object attemptInvokeRemote(Object... args)
+        throws RemoteException, IllegalAccessException, InvocationTargetException
+    {
+        try {
+            if (!isConnected()) connect();
+        } catch (NotBoundException e) {
+            throw new RemoteException();
+        }
+
+        Method method = getCallingMethodAnalogue();
+
+        return method.invoke(_dbcon, args);
+    }
+
+    @Override
+    public int getIdentifier()
+    {
+        try { return (Integer) attemptInvokeRemote(); }
+        catch (Exception e) { return -1; }
     }
 
     @Override
