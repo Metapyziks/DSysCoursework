@@ -102,40 +102,41 @@ public class Endpoint
         return arr;
     }
 
-    private static void invokeCommandMethod(Endpoint endpoint, String command)
+    private static void invokeCommandMethod(Endpoint endpoint, String command, String[] args)
     {
         Method method;
-        String[] split = splitCommand(command);
-
-        if (split.length == 0) return;
-
         try {
-            method = endpoint.getClass().getMethod(split[0], String[].class);
+            method = endpoint.getClass().getMethod(command, Endpoint.class, String[].class);
             if (method.getAnnotation(Command.class) == null) {
                 throw new NoSuchMethodException();
             }
         } catch (NoSuchMethodException e) {
-            log("Unrecognised command \"{0}\"", split[0]);
+            log("Unrecognised command \"{0}\"", command);
             return;
         }
 
         try {
-            method.invoke(null, (Object) Arrays.copyOfRange(split, 1, split.length));
+            method.invoke(null, endpoint, (Object) args);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    private static void invokeCommandMethod(Endpoint endpoint, String command)
+    {
+        String[] split = splitCommand(command);
+
+        if (split.length == 0) return;
+        
+        invokeCommandMethod(endpoint, split[0], Arrays.copyOfRange(split, 1, split.length));
+    }
+
     @Command
-    public static void get(String[] args)
+    public static void get(Endpoint endpoint, String[] args)
     {
         if (args.length != 0) {
-            if (args[0].equals("master")) {
-                log("Finding master...");
-                Host master = getMasterServer();
-                log("Current master: {0}", master);
-                return;
-            }
+            invokeCommandMethod(endpoint, "get_" + args[0], Arrays.copyOfRange(args, 1, args.length));
+            return;
         }
 
         log("Usage of command \"get\":");
@@ -143,7 +144,16 @@ public class Endpoint
     }
 
     @Command
-    public static void exit(String[] args)
+    public static void get_master(Endpoint endpoint, String[] args)
+    {
+        log("Finding master...");
+        Host master = getMasterServer();
+        log("Current master: {0}", master);
+        return;
+    }
+
+    @Command
+    public static void exit(Endpoint endpoint, String[] args)
     {
         log("Exiting...");
         _sReadInput = false;
