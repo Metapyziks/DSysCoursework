@@ -148,6 +148,13 @@ public class Host
     }
 
     @Override
+    public String updateDatabase(String assignStr, String queryStr)
+    {
+        try { return this.<String>attemptInvokeRemote(0, assignStr, queryStr); }
+        catch (Exception e) { return null; }
+    }
+
+    @Override
     public String toString()
     {
         return name + "@" + address + ":" + Integer.toString(port);

@@ -13,7 +13,7 @@ public class Query
         public static final int NOT_EQUAL = 6;
     }
 
-    public static Query parse(String query)
+    private static Query parseInternal(String query, boolean assign)
         throws QuerySyntaxException
     {
         String[] split = Endpoint.splitCommand(query);
@@ -38,7 +38,7 @@ public class Query
                 throw new QuerySyntaxException("expected a field name", split, i);
             }
 
-            if (split[i].equals("true") || split[i].equals("false")) {
+            if (!assign && (split[i].equals("true") || split[i].equals("false"))) {
                 condition.isConstant = true;
                 condition.constant = (Boolean) split[i].equals("true");
             } else {
@@ -52,10 +52,16 @@ public class Query
                     throw new QuerySyntaxException("expected an operator", split, i);
                 }
 
-                for(int o = 0; o < validOperators.length; ++ o) {
-                    if (split[i].equals(validOperators[o])) {
-                        condition.operator = o;
-                        break;
+                if (assign) {
+                    if (split[i].equals("=")) {
+                        condition.operator = Operator.EQUAL;
+                    }
+                } else {
+                    for(int o = 0; o < validOperators.length; ++ o) {
+                        if (split[i].equals(validOperators[o])) {
+                            condition.operator = o;
+                            break;
+                        }
                     }
                 }
 
@@ -75,18 +81,30 @@ public class Query
             }
 
             if (++i < split.length) {
-                if (!split[i].equals("or") && !split[i].equals("and")) {
+                if (!assign && !split[i].equals("or") && !split[i].equals("and")) {
                     throw new QuerySyntaxException("expected either \"or\" or \"and\" between clauses", split, i);
                 }
 
                 condition.next = new Query();
-                condition.isDisjunction = split[i++].equals("or");
+                condition.isDisjunction = !assign && split[i++].equals("or");
             }
 
             condition = condition.next;
         }
 
         return rootCondition;
+    }
+
+    public static Query parseQuery(String query)
+        throws QuerySyntaxException
+    {
+        return parseInternal(query, false);
+    }
+
+    public static Query parseAssignment(String query)
+        throws QuerySyntaxException
+    {
+        return parseInternal(query, true);
     }
 
     public Field field;
@@ -165,7 +183,7 @@ public class Query
 
                 boolean wasInteger = false;
                 if (constant instanceof Integer) {
-                    if (val instanceof Department) {
+                    if (field.getType() == Department.class) {
                         val = ((Department) val).identifier;
                         thisEval = evaluate((Integer) val, (Integer) constant);
                         wasInteger = true;
@@ -178,7 +196,7 @@ public class Query
                 }
 
                 if (!wasInteger) {
-                    if (val instanceof Department) {
+                    if (field.getType() == Department.class) {
                         val = ((Department) val).name;
                     }
 
@@ -193,6 +211,31 @@ public class Query
             return thisEval || next.evaluate(student);
         } else {
             return (thisEval && next.evaluate(student)) || carry(student);
+        }
+    }
+
+    public void assign(Endpoint endpoint, Student student)
+    {
+        try {
+            if (field.getType() == Department.class) {
+                if (constant instanceof Integer) {
+                    field.set(student, endpoint.getDepartment((Integer) constant));
+                } else {
+                    field.set(student, endpoint.getDepartment(constant.toString()));
+                }
+            } else if (field.get(student) instanceof Integer) {
+                if (constant instanceof Integer) {
+                    field.set(student, constant);
+                } else {
+                    field.set(student, 0);
+                }
+            } else {
+                field.set(student, constant.toString());
+            }
+        } catch (Exception e) { }
+
+        if (next != null) {
+            next.assign(endpoint, student);
         }
     }
 }

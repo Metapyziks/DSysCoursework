@@ -1,8 +1,6 @@
 public class Client
     extends Endpoint
 {
-    private static final String SERVERS_DOWN_MSG = "All servers are down";
-
     public static void main(String[] args)
     {
         initializeDepartments("../departments.txt");
@@ -34,7 +32,7 @@ public class Client
         else log(SERVERS_DOWN_MSG);
     }
 
-    @Command(description="sets the test phrase to be a given value")
+    @Command(description="sets the test phrase to be a given value", usage="<value>")
     public static void cmd_set_testphrase(Endpoint endpoint, String[] args)
     {
         Host master = getMasterServer();
@@ -42,7 +40,8 @@ public class Client
         else log(SERVERS_DOWN_MSG);
     }
 
-    @Command(description="inserts the given student information into the database")
+    @Command(description="inserts the given student information into the database",
+        usage="[id] <firstName> <lastName> <deptID> <year> <credits>")
     public static void cmd_insert(Endpoint endpoint, String[] args)
     {
         Host master = getMasterServer();
@@ -73,7 +72,15 @@ public class Client
         else log(SERVERS_DOWN_MSG);
     }
 
-    @Command(description="selects all students from the database that match a set of conditions")
+    private static final String CONDITION_DESCRIPTION =
+          "conditions are separated by \"and\" or \"or\", and are of the form:\n\n"
+        + "    <fieldName> <operator> <value>\n\n"
+        + "conditions are assumed to be in disjunctive normal form\n"
+        + "operators include ==, !=, >=, <=, > and <";
+
+    @Command(description="selects all students from the database that match a set of conditions\n"
+        + CONDITION_DESCRIPTION,
+        usage="<conditions>")
     public static void cmd_select(Endpoint endpoint, String[] args)
     {
         Host master = getMasterServer();
@@ -84,12 +91,39 @@ public class Client
         else log(SERVERS_DOWN_MSG);
     }
 
-    @Command(description="deletes all students from the database that match a set of conditions")
+    @Command(description="deletes all students from the database that match a set of conditions\n"
+        + CONDITION_DESCRIPTION,
+        usage="<conditions>")
     public static void cmd_delete(Endpoint endpoint, String[] args)
     {
         Host master = getMasterServer();
         if (master != null) {
             String response = master.deleteFromDatabase("\"" + joinStringArray("\" \"", args) + "\"");
+            log(response);
+        }
+        else log(SERVERS_DOWN_MSG);
+    }
+
+    @Command(description="updates all students from the database that match a set of conditions\n"
+        + CONDITION_DESCRIPTION,
+        usage="<assignments> where <conditions>")
+    public static void cmd_update(Endpoint endpoint, String[] args)
+    {
+        int whereIndex = 0;
+        for (; whereIndex < args.length; ++ whereIndex) {
+            if (args[whereIndex].equals("where")) break;
+        }
+
+        if (whereIndex == args.length) {
+            log("Syntax error: Expected \"where\"");
+            return;
+        }
+
+        Host master = getMasterServer();
+        if (master != null) {
+            String response = master.updateDatabase(
+                "\"" + joinStringArray("\" \"", args, 0, whereIndex) + "\"",
+                "\"" + joinStringArray("\" \"", args, whereIndex + 1, args.length - whereIndex - 1) + "\"");
             log(response);
         }
         else log(SERVERS_DOWN_MSG);

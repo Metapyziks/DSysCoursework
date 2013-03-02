@@ -9,6 +9,8 @@ import java.lang.reflect.*;
 
 public class Endpoint
 {
+    public static final String SERVERS_DOWN_MSG = "All servers are down";
+
     private static boolean _sReadInput;
 
     public static void log(String msg)
@@ -93,24 +95,41 @@ public class Endpoint
         return null;
     }
 
-    public static String joinStringArray(String separator, String[] array, int count)
+    public static Department getDepartment(String name)
+    {
+        name = name.toLowerCase();
+        for (int i = 0; i < _sDepartments.length; ++i) {
+            if (_sDepartments[i].name.toLowerCase().startsWith(name)) {
+                return _sDepartments[i];
+            }
+        }
+
+        return null;
+    }
+
+    public static String joinStringArray(String separator, String[] array, int start, int count)
     {
         if (count == 0) return "";
 
         StringBuffer buffer = new StringBuffer();
-        if (array.length > 0) buffer.append(array[0]);
+        if (array.length > start) buffer.append(array[start]);
 
         for(int i = 1; i < count; ++ i) {
             buffer.append(separator);
-            if (i < array.length) buffer.append(array[i]);
+            if (i + start < array.length) buffer.append(array[i + start]);
         }
 
         return buffer.toString();
     }
 
+    public static String joinStringArray(String separator, String[] array, int count)
+    {
+        return joinStringArray(separator, array, 0, count);
+    }
+
     public static String joinStringArray(String separator, String[] array)
     {
-        return joinStringArray(separator, array, array.length);
+        return joinStringArray(separator, array, 0, array.length);
     }
 
     public static String[] splitCommand(String command)
@@ -215,7 +234,8 @@ public class Endpoint
     @Retention(RetentionPolicy.RUNTIME)
     public @interface Command {
         String description() default "no description";
-        int minArgs() default 2;
+        String usage() default "";
+        int minArgs() default 0;
     }
 
     @Command(description = "prints the name and location of the current master server")
@@ -223,11 +243,11 @@ public class Endpoint
     {
         Host master = getMasterServer();
         if (master != null) log("{0}", master);
-        else log("No servers online");
+        else log(SERVERS_DOWN_MSG);
     }
 
     @Command(description = "gets the name of a department specified by identification number",
-        minArgs = 1)
+        minArgs = 1, usage = "<id>")
     public static void cmd_get_department(Endpoint endpoint, String[] args)
     {
         try {
@@ -259,19 +279,24 @@ public class Endpoint
         }
     }
 
-    @Command(description = "looks like you already know how to use this command!")
+    @Command(description = "looks like you already know how to use this command!",
+        usage = "[command]")
     public static void cmd_help(Endpoint endpoint, String[] args)
     {
         if (args.length == 0) {
             for (Method method : getAllCommandMethods(endpoint.getClass())) {
                 Command annotation = (Command) method.getAnnotation(Command.class);
-                log("----\n- {0}\n----\n{1}\n", method.getName().substring(4).replace("_", " "), annotation.description());
+                log("----\n- {0} {1}\n----\n{2}\n",
+                    method.getName().substring(4).replace("_", " "), annotation.usage(),
+                    annotation.description());
             }
         } else {
             Method method = getCommandMethod(endpoint, joinStringArray("_", args));
             if (method != null) {
                 Command annotation = (Command) method.getAnnotation(Command.class);
-                log(annotation.description());
+                log("----\n- {0} {1}\n----\n{2}\n",
+                    method.getName().substring(4).replace("_", " "), annotation.usage(),
+                    annotation.description());
             } else {
                 log("Command not recognised");
             }
@@ -289,6 +314,7 @@ public class Endpoint
     {
         _sReadInput = true;
 
+        System.out.println("Type \"help\" to get a list of all commands");
         System.out.print("> ");
         String line;
         while ((line = readLine()) != null) {

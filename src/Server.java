@@ -224,7 +224,7 @@ public class Server
     {
         Query query;
         try {
-            query = Query.parse(queryStr);
+            query = Query.parseQuery(queryStr);
         } catch (Exception e) {
             return new QueryResponse(e.getMessage()).toString();
         }
@@ -245,7 +245,7 @@ public class Server
     {
         Query query;
         try {
-            query = Query.parse(queryStr);
+            query = Query.parseQuery(queryStr);
         } catch (Exception e) {
             return new QueryResponse(e.getMessage()).toString();
         }
@@ -265,5 +265,30 @@ public class Server
         Student[] arr = new Student[matches.size()];
         matches.toArray(arr);
         return "Deleted " + arr.length + " item(s):\n" + new QueryResponse(arr).toString();
+    }
+
+    @Override
+    public String updateDatabase(String assignStr, String queryStr)
+    {
+        Query assignment, query;
+        try {
+            assignment = Query.parseAssignment(assignStr);
+            query = Query.parseQuery(queryStr);
+        } catch (Exception e) {
+            return new QueryResponse(e.getMessage()).toString();
+        }
+
+        ArrayList<Student> matches = new ArrayList<Student>();
+
+        for (Student student : _sDatabase) {
+            if (query.evaluate(student)) {
+                matches.add(student);
+                assignment.assign(this, student);
+            }
+        }
+
+        Student[] arr = new Student[matches.size()];
+        matches.toArray(arr);
+        return "Updated " + arr.length + " item(s):\n" + new QueryResponse(arr).toString();
     }
 }
