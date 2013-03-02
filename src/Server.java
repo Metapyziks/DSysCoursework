@@ -220,7 +220,7 @@ public class Server
     }
 
     @Override
-    public String queryDatabase(String queryStr)
+    public String selectFromDatabase(String queryStr)
     {
         Query query;
         try {
@@ -237,6 +237,33 @@ public class Server
 
         Student[] arr = new Student[matches.size()];
         matches.toArray(arr);
-        return new QueryResponse(arr).toString();
+        return "Selected " + arr.length + " item(s):\n" + new QueryResponse(arr).toString();
+    }
+
+    @Override
+    public String deleteFromDatabase(String queryStr)
+    {
+        Query query;
+        try {
+            query = Query.parse(queryStr);
+        } catch (Exception e) {
+            return new QueryResponse(e.getMessage()).toString();
+        }
+
+        ArrayList<Student> matches = new ArrayList<Student>();
+
+        for (Student student : _sDatabase) {
+            if (query.evaluate(student)) matches.add(student);
+        }
+
+        for (Student student : matches) {
+            _sDatabase.remove(student);
+        }
+
+        propagate(queryStr);
+
+        Student[] arr = new Student[matches.size()];
+        matches.toArray(arr);
+        return "Deleted " + arr.length + " item(s):\n" + new QueryResponse(arr).toString();
     }
 }

@@ -190,7 +190,7 @@ public class Query
         if (next == null) return thisEval;
 
         if (isDisjunction) {
-            return thisEval || carry(student);
+            return thisEval || next.evaluate(student);
         } else {
             return (thisEval && next.evaluate(student)) || carry(student);
         }

@@ -12,5 +12,6 @@ public interface IDatabaseConnection extends Remote
     String getTestPhrase() throws RemoteException;
 
     String insertIntoDatabase(String student) throws RemoteException;
-    String queryDatabase(String queryStr) throws RemoteException;
+    String selectFromDatabase(String queryStr) throws RemoteException;
+    String deleteFromDatabase(String queryStr) throws RemoteException;
 }

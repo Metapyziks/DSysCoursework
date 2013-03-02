@@ -134,7 +134,14 @@ public class Host
     }
 
     @Override
-    public String queryDatabase(String queryStr)
+    public String selectFromDatabase(String queryStr)
+    {
+        try { return this.<String>attemptInvokeRemote(0, queryStr); }
+        catch (Exception e) { return null; }
+    }
+
+    @Override
+    public String deleteFromDatabase(String queryStr)
     {
         try { return this.<String>attemptInvokeRemote(0, queryStr); }
         catch (Exception e) { return null; }

@@ -147,7 +147,7 @@ public class Endpoint
         return arr;
     }
 
-    private static boolean invokeCommandMethod(Endpoint endpoint, String command, String[] args)
+    private static Method getCommandMethod(Endpoint endpoint, String command)
     {
         Method method;
         try {
@@ -156,8 +156,35 @@ public class Endpoint
                 throw new NoSuchMethodException();
             }
         } catch (NoSuchMethodException e) {
-            return false;
+            return null;
         }
+
+        return method;
+    }
+
+    private static ArrayList<Method> getAllCommandMethods(Class clss)
+    {
+        ArrayList<Method> list = new ArrayList<Method>();
+        for (Method method : clss.getDeclaredMethods()) {
+            if (method.getAnnotation(Command.class) != null && method.getName().startsWith("cmd_")) {
+                list.add(method);
+            }
+        }
+
+        if (clss.getSuperclass() != Object.class) {
+            for (Method method : getAllCommandMethods(clss.getSuperclass())) {
+                list.add(method);
+            }
+        }
+
+        return list;
+    }
+
+    private static boolean invokeCommandMethod(Endpoint endpoint, String command, String[] args)
+    {
+        Method method = getCommandMethod(endpoint, command);
+
+        if (method == null) return false;
 
         try {
             method.invoke(null, endpoint, (Object) args);
@@ -203,11 +230,15 @@ public class Endpoint
         minArgs = 1)
     public static void cmd_get_department(Endpoint endpoint, String[] args)
     {
-        Department department = getDepartment(Integer.parseInt(args[0]));
-        if (department != null) {
-            log(department.name);
-        } else {
-            log("Department with identifier {0} not found");
+        try {
+            Department department = getDepartment(Integer.parseInt(args[0]));
+            if (department != null) {
+                log(department.name);
+            } else {
+                log("Department with identifier {0} not found", args[0]);
+            }
+        } catch (Exception e) {
+            log("Invalid department identifier");
         }
     }
 
@@ -228,6 +259,25 @@ public class Endpoint
         }
     }
 
+    @Command(description = "looks like you already know how to use this command!")
+    public static void cmd_help(Endpoint endpoint, String[] args)
+    {
+        if (args.length == 0) {
+            for (Method method : getAllCommandMethods(endpoint.getClass())) {
+                Command annotation = (Command) method.getAnnotation(Command.class);
+                log("----\n- {0}\n----\n{1}\n", method.getName().substring(4).replace("_", " "), annotation.description());
+            }
+        } else {
+            Method method = getCommandMethod(endpoint, joinStringArray("_", args));
+            if (method != null) {
+                Command annotation = (Command) method.getAnnotation(Command.class);
+                log(annotation.description());
+            } else {
+                log("Command not recognised");
+            }
+        }
+    }
+
     @Command(description = "closes any active connections and stops the application")
     public static void cmd_exit(Endpoint endpoint, String[] args)
     {
@@ -243,7 +293,7 @@ public class Endpoint
         String line;
         while ((line = readLine()) != null) {
             if (!invokeCommandMethod(endpoint, line)) {
-                log("Unknown command");
+                log("Command not recognised");
             }
 
             if (_sReadInput) {
