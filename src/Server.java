@@ -212,7 +212,9 @@ public class Server
             }
 
             _sDatabase.add(student);
+
             propagate(str);
+
             return "SUCCESS\n" + student.toString() + "\n";
         } catch (Exception e) {
             return "FAILURE\n";
@@ -286,6 +288,8 @@ public class Server
                 assignment.assign(this, student);
             }
         }
+
+        propagate(assignStr, queryStr);
 
         Student[] arr = new Student[matches.size()];
         matches.toArray(arr);

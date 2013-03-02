@@ -19,7 +19,7 @@ public class Query
         String[] split = Endpoint.splitCommand(query);
 
         final String[] validOperators = new String[] {
-            null,  // 0
+            null, // 0
             ">=", // 1
             "<=", // 2
             ">",  // 3
