@@ -19,11 +19,13 @@ public class Server
     private static void connect(String address, int port)
         throws RemoteException, AlreadyBoundException
     {
-        try {
-            LocateRegistry.createRegistry(port);
-            log("Created new RMI registry at port {0}", Integer.toString(port));
-        } catch (RemoteException e) {
-            log("Detected existing RMI registry");
+        if (address.equals("localhost") || address.equals("127.0.0.1")) {
+            try {
+                LocateRegistry.createRegistry(port);
+                log("Created new RMI registry at port {0}", Integer.toString(port));
+            } catch (RemoteException e) {
+                log("Detected existing RMI registry");
+            }
         }
 
         _sRegistry = LocateRegistry.getRegistry(address, port);

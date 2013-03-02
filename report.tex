@@ -31,7 +31,7 @@ The front-end client takes the form of a command prompt program. Requests and qu
 
 The main non-prescribed feature of the system is the support of many servers being used as backups, instead of just one. The benefit of more than two servers is the improved probability of at least one server being online at any time. The system can also support two servers but with many possible locations for either, for increased flexibility. Additionally, server programs all have command prompts which can be used to debug the system.
 
-The command prompt system was designed using Java reflection to be easily extendible with new commands. All that is required to add a command is to add a method in either the \emph{Server}, \emph{Client} or \emph{Endpoint} classes with a \emph{@Command} annotation. Also, new fields added to \emph{Student} are automatically exposed to the database query system, also using reflection.
+The command prompt system was designed using Java reflection to be easily extendible with new commands. All that is required to add a command is to add a method in either the \emph{Server}, \emph{Client} or \emph{Endpoint} classes with a \emph{@Command} annotation. Also, new fields added to \emph{Student} are automatically exposed to the database query system, also using reflection. Also, the system can contentedly capacitate countless concurrent client connections.
 
 \section{Design Limitations}
 A limitation of the design is that it is possible for a client to connect to a backup server if they are temporarily unable to connect to the primary one, even if the primary server is actually online. This would mean that changes would be made to the backup server, and not the primary one. However, this situation is hypothetical and has not occurred during testing.
@@ -40,6 +40,7 @@ Another possible issue may occur when a new server is unable to connect to the l
 
 \section{Usage Instruction}
 \subsection{Installation}
+\subsubsection{File structure}
 The files (and directory) required for usage are as follows:
 
 \begin{itemize}
@@ -51,6 +52,42 @@ The files (and directory) required for usage are as follows:
 \end{itemize}
 
 \noindent
-These files should be in the same directory, with \emph{bin/} as a subdirectory.
+These files should be in the same directory, with \emph{bin/} as a subdirectory. The Java runtime is also required.
 
+\subsubsection{Setting Up Host List}
+The file \emph{hosts.txt} contains a list of the names, addresses and ports of the host programs to be used. The file can contain at most one host per line, with the three pieces of information individually surrounded by double-quotes. Any characters outside a pair of double-quotes is ignored. A line may be ``commented out'' by prepending it with a hash symbol (\emph{\#}). The default configuration contains two host definitions, both on the local machine and with ports of $3125$ and $3126$ respectively. The default file also contains the definitions of another three hosts, which are excluded with hash symbols so as to be easily included again.
+
+\subsubsection{Setting Up Department List}
+The \emph{departments.txt} file lists the academic departments used by the system, by identification number and name. Identification numbers need not be sequential, just unique. As with \emph{hosts.txt}, lines may be omitted with a hash symbol, and there can by at most one definition per line.
+
+\subsection{Starting a Server}
+A server may be started by executing either the \emph{server.bat} or \emph{server.sh} scripts by command line. The command line arguments for the script are:
+
+\begin{verbatim}
+# Windows:
+server.bat [rmiregistry-address [rmiregistry-port]]
+
+# Unix:
+./server.sh [rmiregistry-address [rmiregistry-port]]
+\end{verbatim}
+
+\noindent
+If \emph{localhost} is given as the \emph{registry address}, the program attempts to create a new RMI Registry at the given port if one doesn't already exist. Care should be taken to ensure no two servers are started on the same machine using the same port. Also, the addresses and ports used should match the ones specified in \emph{hosts.txt}. For the default configuration, this would be (on Windows):
+
+\begin{verbatim}
+server.bat localhost 3125
+server.bat localhost 3126
+\end{verbatim}
+
+\noindent
+The server program has a command line interface, and a list of available commands and their uses can be shown by typing \emph{help} at the prompt. The server may be safely shut down by typing \emph{exit}.
+
+\subsection{Starting a Client}
+Clients are also started by command line, and require no command line arguments. Simple execute either \emph{client.bat} or \emph{client.sh}, and the program will try and connect to the servers specified by \emph{hosts.txt}. A list of commands can be shown by typing \emph{help}, like with the server, and \emph{exit} can also be used to stop the client.
+
+\section{Areas of Improvement}
+Given more time, I would attempt to send actual \emph{Student} objects using RMI instead of serializing them to a \emph{String} like I am currently. This would simplify the process and probably reduce bandwidth. I would also like to improve the query language to include comparisons between multiple fields, like being able to query students who have more than 200 credits per year ($totalCredit > year \times 200$). Finally, it would be useful for the \emph{departments.txt} dictionary to be synchronised along with the database, to ensure that clients do not have a version that differs to the server's.
+
+\section{References}
+All source code in the project was written by myself for this assignment, using my past practical work as a reference.
 \end{document}
