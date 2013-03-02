@@ -2,6 +2,8 @@ SRC = \
 	src/StructuredFileReader.java \
 	src/Department.java \
 	src/Student.java \
+	src/QuerySyntaxException.java \
+	src/Query.java \
 	src/QueryResponse.java \
 	src/IDatabaseConnection.java \
 	src/Host.java \
@@ -13,7 +15,9 @@ CLASS = \
 	bin/StructuredFileReader.class \
 	bin/Department.class \
 	bin/Student.class \
-	src/QueryResponse.java \
+	bin/QuerySyntaxException.class \
+	bin/Query.class \
+	bin/QueryResponse.class \
 	bin/IDatabaseConnection.class \
 	bin/Host.class \
 	bin/Endpoint.class \
