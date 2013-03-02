@@ -27,3 +27,6 @@ CLASS = \
 $(CLASS): $(SRC)
 	mkdir -p bin/
 	javac -classpath .:bin -d bin $(SRC)
+
+report.pdf: report.tex
+	pdflatex report.tex
