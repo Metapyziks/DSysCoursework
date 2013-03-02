@@ -38,35 +38,40 @@ public class Query
                 throw new QuerySyntaxException("expected a field name", split, i);
             }
 
-            try {
-                condition.field = Student.class.getDeclaredField(split[i]);
-            } catch (Exception e) {
-                throw new QuerySyntaxException("invalid field name", split, i);
-            }
-
-            if (++i >= split.length) {
-                throw new QuerySyntaxException("expected an operator", split, i);
-            }
-
-            for(int o = 0; o < validOperators.length; ++ o) {
-                if (split[i].equals(validOperators[o])) {
-                    condition.operator = o;
-                    break;
+            if (split[i].equals("true") || split[i].equals("false")) {
+                condition.isConstant = true;
+                condition.constant = (Boolean) split[i].equals("true");
+            } else {
+                try {
+                    condition.field = Student.class.getDeclaredField(split[i]);
+                } catch (Exception e) {
+                    throw new QuerySyntaxException("invalid field name", split, i);
                 }
-            }
 
-            if (condition.operator == Operator.NONE) {
-                throw new QuerySyntaxException("invalid operator", split, i);
-            }
+                if (++i >= split.length) {
+                    throw new QuerySyntaxException("expected an operator", split, i);
+                }
 
-            if (++i >= split.length) {
-                throw new QuerySyntaxException("expected a constant value", split, i);
-            }
+                for(int o = 0; o < validOperators.length; ++ o) {
+                    if (split[i].equals(validOperators[o])) {
+                        condition.operator = o;
+                        break;
+                    }
+                }
 
-            try {
-                condition.constant = Integer.parseInt(split[i]);
-            } catch (Exception e) {
-                condition.constant = split[i];
+                if (condition.operator == Operator.NONE) {
+                    throw new QuerySyntaxException("invalid operator", split, i);
+                }
+
+                if (++i >= split.length) {
+                    throw new QuerySyntaxException("expected a constant value", split, i);
+                }
+
+                try {
+                    condition.constant = Integer.parseInt(split[i]);
+                } catch (Exception e) {
+                    condition.constant = split[i];
+                }
             }
 
             if (++i < split.length) {
@@ -89,6 +94,7 @@ public class Query
     public Object constant;
     public Query next;
     public boolean isDisjunction;
+    public boolean isConstant;
 
     public Query()
     {
@@ -96,7 +102,9 @@ public class Query
         operator = Operator.NONE;
         constant = null;
         next = null;
+
         isDisjunction = false;
+        isConstant = false;
     }
 
     private boolean evaluate(String a, String b)
@@ -141,33 +149,36 @@ public class Query
 
     public boolean evaluate(Student student)
     {
-        boolean thisEval = false;
-        Object val;
-        try {
-            val = field.get(student);
+        boolean thisEval = (isConstant && (Boolean) constant);
 
-            boolean wasInteger = false;
-            if (constant instanceof Integer) {
-                if (val instanceof Department) {
-                    val = ((Department) val).identifier;
-                    thisEval = evaluate((Integer) val, (Integer) constant);
-                    wasInteger = true;
-                } else {
-                    try {
-                        thisEval = evaluate(Integer.parseInt(val.toString()), (Integer) constant);
+        if (!isConstant) {
+            Object val;
+            try {
+                val = field.get(student);
+
+                boolean wasInteger = false;
+                if (constant instanceof Integer) {
+                    if (val instanceof Department) {
+                        val = ((Department) val).identifier;
+                        thisEval = evaluate((Integer) val, (Integer) constant);
                         wasInteger = true;
-                    } catch (Exception e) { }
+                    } else {
+                        try {
+                            thisEval = evaluate(Integer.parseInt(val.toString()), (Integer) constant);
+                            wasInteger = true;
+                        } catch (Exception e) { }
+                    }
                 }
-            }
 
-            if (!wasInteger) {
-                if (val instanceof Department) {
-                    val = ((Department) val).name;
+                if (!wasInteger) {
+                    if (val instanceof Department) {
+                        val = ((Department) val).name;
+                    }
+
+                    thisEval = evaluate(val.toString(), constant.toString());
                 }
-
-                thisEval = evaluate(val.toString(), constant.toString());
-            }
-        } catch (Exception e) { }
+            } catch (Exception e) { }
+        }
 
         if (next == null) return thisEval;
 
