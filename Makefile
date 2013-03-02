@@ -30,3 +30,6 @@ $(CLASS): $(SRC)
 
 report.pdf: report.tex
 	pdflatex report.tex
+
+tests.pdf: tests.tex
+	pdflatex tests.tex

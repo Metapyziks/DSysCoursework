@@ -1,0 +1,158 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{lipsum}
+\usepackage[margin=25mm]{geometry}
+\usepackage{amsmath}
+
+\title{Distributed Systems Coursework - Test Cases}
+\date{\today}
+\author{James King}
+
+\begin{document}
+\maketitle
+\section{Connect to Master Server}
+\subsection{Method}
+A pair of servers with distinct ports will be initiated, and then a client program. Both servers and the client will then report which server they have decided is the master server through the \emph{get master} command.
+
+\subsection{Expected Result}
+All programs should give the same result when being queried for the name of the master server.
+
+\subsection{Actual Result}
+\subsubsection{Server A}
+\begin{verbatim}
+$ ./server.sh localhost 3125
+Reading departments file "../departments.txt"
+Found 30 department definitions
+Reading hosts file "../hosts.txt"
+Found 2 host definitions
+Created new RMI registry at port 3125
+Connected to RMI registry at localhost 3125
+DatabaseConnection bound to registry
+Polling servers to find identifier...
+Server identifier: 1
+Type "help" to get a list of all commands
+\end{verbatim}
+
+\subsubsection{Server B}
+\begin{verbatim}
+$ ./server.sh localhost 3126
+Reading departments file "../departments.txt"
+Found 30 department definitions
+Reading hosts file "../hosts.txt"
+Found 2 host definitions
+Created new RMI registry at port 3126
+Connected to RMI registry at localhost 3126
+DatabaseConnection bound to registry
+Polling servers to find identifier...
+Server identifier: 2
+Synchronizing with master server...
+Type "help" to get a list of all commands
+\end{verbatim}
+
+\subsubsection{Client}
+\begin{verbatim}
+$ ./client.sh
+Reading departments file "../departments.txt"
+Found 30 department definitions
+Reading hosts file "../hosts.txt"
+Found 2 host definitions
+Type "help" to get a list of all commands
+\end{verbatim}
+
+\subsubsection{Server A}
+\begin{verbatim}
+> get master
+host-a@localhost:3125
+\end{verbatim}
+
+\subsubsection{Server B}
+\begin{verbatim}
+> get master
+host-a@localhost:3125
+\end{verbatim}
+
+\subsubsection{Client}
+\begin{verbatim}
+> get master
+host-a@localhost:3125
+\end{verbatim}
+
+\subsection{Verdict}
+Success
+
+\section{Record Insertion and Seletion}
+\subsection{Method}
+Following on from the previous test, the client will insert a data record into the master server's database with \emph{insert}, and then retrieve it again with \emph{select}.
+
+\subsection{Expected Result}
+The selected data should be identical to the inserted information.
+
+\subsection{Actual Results}
+\subsubsection{Client}
+\begin{verbatim}
+> insert James King 150 2 200
+SUCCESS
+#1 James King, Engineering and Computing Sciences, year 2, 200 credits
+
+> select identifier == 1
+Selected 1 item(s):
+#1 James King, Engineering and Computing Sciences, year 2, 200 credits
+\end{verbatim}
+
+\subsection{Verdict}
+Success
+
+\section{Swap Primary Server}
+\subsection{Method}
+Following the last test, the master server will be shut down and the client will make the same \emph{select} request again. Then the server will be restarted, and the other server shut down afterwards. Finally, the request will be executed one more time.
+
+\subsection{Expected Result}
+The select request should provide the same data as was originally inserted each time.
+
+\subsection{Actual Results}
+\subsubsection{Server A}
+\begin{verbatim}
+> exit
+Exiting...
+\end{verbatim}
+
+\subsubsection{Client}
+\begin{verbatim}
+> select identifier == 1
+Selected 1 item(s):
+#1 James King, Engineering and Computing Sciences, year 2, 200 credits
+\end{verbatim}
+
+\subsubsection{Server A}
+\begin{verbatim}
+$ ./server.sh localhost 3125
+Reading departments file "../departments.txt"
+Found 30 department definitions
+Reading hosts file "../hosts.txt"
+Found 2 host definitions
+Created new RMI registry at port 3125
+Connected to RMI registry at localhost 3125
+DatabaseConnection bound to registry
+Polling servers to find identifier...
+Server identifier: 3
+Synchronizing with master server...
+Type "help" to get a list of all commands
+\end{verbatim}
+
+\subsubsection{Server B}
+\begin{verbatim}
+> exit
+Exiting...
+\end{verbatim}
+
+\subsubsection{Client}
+\begin{verbatim}
+> select identifier == 1
+Selected 1 item(s):
+#1 James King, Engineering and Computing Sciences, year 2, 200 credits
+\end{verbatim}
+
+\subsection{Verdict}
+Success
+
+\end{document}
