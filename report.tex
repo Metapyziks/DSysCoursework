@@ -14,9 +14,9 @@
 \section{System Architecture}
 The system has been designed to support any number of servers, with the first server to start being recognised as the master server. Clients connect to the master server, which fulfils their requests. The state of the database contained within the master server is propagated to all the other servers whenever it is modified. When the master server goes offline, the server with the longest uptime of the ones that remain will replace it.
 
-All servers in the system are instances of the same Java program. Each server has a list of the addresses and ports of the other servers, and a unique identification number. When a server starts, it attempts to connect to each of the other servers in order to determine what identification number to use. The chosen number satisfies the condition of being larger than the identification number of any other server that is currently online. Therefore, the newest server will always have the largest identification number, and the oldest has the smallest number. This property is used to determine which server is currently the master server. After the new server finds its identifier, the master server is queried to construct the new server's local database to match the master server's.
+All servers in the system are instances of the same Java program. Each server has a list of the addresses and ports of the other servers, and a unique identification number. When a server starts, it attempts to connect to each of the other servers in order to determine what identification number to use. The chosen number satisfies the condition of being larger than the identification number of any other server that is currently online. Therefore, the newest server will always have the largest identification number, and the oldest has the smallest number. This property is used to determine which server is currently the master server. After the new server finds its identifier, the master server is queried to construct the new server's local database to match the master server's database.
 
-During operation, information is propagated between the servers in a chain ordered by identification number. When the master server carries out a client request that mutates the database, it forwards that request to the next oldest server. This server, in turn, propagates the request to the next oldest after itself, and so on until the newest server receives the request.
+During operation, information is propagated between the servers in a chain, ordered by identification number. When the master server carries out a client request that mutates the database, it forwards that request to the next oldest server. This server, in turn, propagates the request to the next oldest after itself, and so on until the newest server receives the request.
 
 To save time, each server caches the location of the current master server and the next in the chain (if it exists). In the event of being unable to connect to the master or the following server, the location of the new master server or following server is found and cached.
 
@@ -25,26 +25,26 @@ Due to the similarity of the requirements for the two servers, they have been im
 
 Both servers contain a virtual database of student information, including all fields required with the minor modification of splitting \emph{student name} into \emph{first name} and \emph{last name}. It is implemented as an \emph{ArrayList} of \emph{Student} objects on each server. When the front-end client makes a request, it sends it to the primary server. This then propagates it to the next server in the chain; which in the case of only two servers will be the backup one.
 
-When the primary server goes offline, the client will start directing its requests to the backup server. Were the first server to go online again, it would assume the roll of backup to the server which remained online. The user performing the requests on the client program is not aware on any change in primary server, apart from the slightly longer delay as the client has to find the new master server. In the event of all servers being down, the client is alerted after each attempted command.
+When the primary server goes offline, the client will start directing its requests to the backup server. Were the first server to go online again, it would assume the roll of backup to the server which remained online. The user performing the requests through the client program is not aware of any change in primary server, apart from the slightly longer delay as the client has to find the new master server. In the event of all servers being down, the user is alerted after each attempted command.
 
 The front-end client takes the form of a command prompt program. Requests and queries are typed, and in the event of an incorrect input the user is informed as to the nature of the mistake. A help facility is provided that lists each command, and can provided detailed information about the usage of a given command. The database query command structure is quite powerful, in that it can perform complex queries involving many field comparisons.
 
-The main non-prescribed feature of the system is the support of many servers being used as backups, instead of just one. The benefit of more than two servers is the improved probability of at least one server being online at any time. The system can also support two servers but with many possible locations for either, for increased flexibility. Additionally, server programs all have command prompts which can be used to debug the system.
+The main non-prescribed feature of the system is the support of many servers being used as backups, instead of just one. The benefit of more than two servers is the improved probability of at least one server being online at any time. The system can also support two servers but with many possible locations for either, for increased flexibility. In conjunction, the system can contentedly capacitate countless concurrent client connections.
 
-The command prompt system was designed using Java reflection to be easily extendible with new commands. All that is required to add a command is to add a method in either the \emph{Server}, \emph{Client} or \emph{Endpoint} classes with a \emph{@Command} annotation. Also, new fields added to \emph{Student} are automatically exposed to the database query system, also using reflection. Also, the system can contentedly capacitate countless concurrent client connections.
+The command prompt system was designed using Java reflection to be easily extendible with new commands. All that is required to add a command is to add a public method in either the \emph{Server}, \emph{Client} or \emph{Endpoint} classes with a \emph{@Command} annotation. Also, new fields added to \emph{Student} are automatically exposed to the database query system, also using reflection.
 
 \section{Design Limitations}
 A limitation of the design is that it is possible for a client to connect to a backup server if they are temporarily unable to connect to the primary one, even if the primary server is actually online. This would mean that changes would be made to the backup server, and not the primary one. However, this situation is hypothetical and has not occurred during testing.
 
 Another possible issue may occur when a new server is unable to connect to the last existing server. In this case, it may assume that server's identification number or a smaller one. This situation also has not occurred during testing.
 
-\section{Usage Instruction}
+\section{Usage Instructions}
 \subsection{Installation}
 \subsubsection{File structure}
 The files (and directory) required for usage are as follows:
 
 \begin{itemize}
-\item \emph{bin/} directory, including the 13 \emph{.class} files within
+\item \emph{bin} directory, including the 13 \emph{.class} files within
 \item \emph{departments.txt} file
 \item \emph{hosts.txt} file
 \item \emph{server.bat} for Windows or \emph{server.sh} for Unix
@@ -52,16 +52,16 @@ The files (and directory) required for usage are as follows:
 \end{itemize}
 
 \noindent
-These files should be in the same directory, with \emph{bin/} as a subdirectory. The Java runtime is also required.
+These files should be in the same directory, with \emph{bin} as a subdirectory. The Java runtime is also required.
 
-\subsubsection{Setting Up Host List}
+\subsubsection{Setting Up the Host List}
 The file \emph{hosts.txt} contains a list of the names, addresses and ports of the host programs to be used. The file can contain at most one host per line, with the three pieces of information individually surrounded by double-quotes. Any characters outside a pair of double-quotes is ignored. A line may be ``commented out'' by prepending it with a hash symbol (\emph{\#}). The default configuration contains two host definitions, both on the local machine and with ports of $3125$ and $3126$ respectively. The default file also contains the definitions of another three hosts, which are excluded with hash symbols so as to be easily included again.
 
-\subsubsection{Setting Up Department List}
-The \emph{departments.txt} file lists the academic departments used by the system, by identification number and name. Identification numbers need not be sequential, just unique. As with \emph{hosts.txt}, lines may be omitted with a hash symbol, and there can by at most one definition per line.
+\subsubsection{Setting Up the Department List}
+The \emph{departments.txt} file lists the academic departments used by the system, by identification number and name. Identification numbers need not be sequential, just unique. As with \emph{hosts.txt}, lines may be omitted with a hash symbol, and there can be at most one definition per line.
 
 \subsection{Starting a Server}
-A server may be started by executing either the \emph{server.bat} or \emph{server.sh} scripts by command line. The command line arguments for the script are:
+A server may be started by executing either the \emph{server.bat} or \emph{server.sh} scripts by command line. The command line arguments for the scripts are:
 
 \begin{verbatim}
 # Windows:
@@ -72,7 +72,7 @@ server.bat [rmiregistry-address [rmiregistry-port]]
 \end{verbatim}
 
 \noindent
-If \emph{localhost} is given as the \emph{registry address}, the program attempts to create a new RMI Registry at the given port if one doesn't already exist. Care should be taken to ensure no two servers are started on the same machine using the same port. Also, the addresses and ports used should match the ones specified in \emph{hosts.txt}. For the default configuration, this would be (on Windows):
+If \emph{localhost} is given as the registry address, the program attempts to create a new RMI registry at the given port if one doesn't already exist. Care should be taken to ensure no two servers are started on the same machine using the same port. Also, the addresses and ports used should match the ones specified in \emph{hosts.txt}. For the default configuration, this would be (on Windows):
 
 \begin{verbatim}
 server.bat localhost 3125
@@ -80,10 +80,10 @@ server.bat localhost 3126
 \end{verbatim}
 
 \noindent
-The server program has a command line interface, and a list of available commands and their uses can be shown by typing \emph{help} at the prompt. The server may be safely shut down by typing \emph{exit}.
+The server program has a command line interface, and a list of available commands and their uses can be shown by typing \emph{help} at the prompt. The server may be safely shut down by typing \emph{exit}. The two servers should be started in separate terminal windows.
 
 \subsection{Starting a Client}
-Clients are also started by command line, and require no command line arguments. Simple execute either \emph{client.bat} or \emph{client.sh}, and the program will try and connect to the servers specified by \emph{hosts.txt}. A list of commands can be shown by typing \emph{help}, like with the server, and \emph{exit} can also be used to stop the client.
+Clients are also started by command line, and require no command line arguments. Simply execute either \emph{client.bat} or \emph{client.sh}, and the program will try and connect to the servers specified by \emph{hosts.txt}. A list of commands can be shown by typing \emph{help}, like with the server, and \emph{exit} can also be used to stop the client.
 
 \section{Areas of Improvement}
 Given more time, I would attempt to send actual \emph{Student} objects using RMI instead of serializing them to a \emph{String} like I am currently. This would simplify the process and probably reduce bandwidth. I would also like to improve the query language to include comparisons between multiple fields, like being able to query students who have more than 200 credits per year ($totalCredit > year \times 200$). Finally, it would be useful for the \emph{departments.txt} dictionary to be synchronised along with the database, to ensure that clients do not have a version that differs to the server's.
