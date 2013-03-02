@@ -147,6 +147,13 @@ public class Query
         }
     }
 
+    private boolean carry(Student student)
+    {
+        if (next == null) return false;
+        if (isDisjunction) return next.evaluate(student);
+        return next.carry(student);
+    }
+
     public boolean evaluate(Student student)
     {
         boolean thisEval = (isConstant && (Boolean) constant);
@@ -183,9 +190,9 @@ public class Query
         if (next == null) return thisEval;
 
         if (isDisjunction) {
-            return thisEval || next.evaluate(student);
+            return thisEval || carry(student);
         } else {
-            return thisEval && next.evaluate(student);
+            return (thisEval && next.evaluate(student)) || carry(student);
         }
     }
 }
