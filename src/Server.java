@@ -212,12 +212,16 @@ public class Server
         public Field field;
         public int operator;
         public Object constant;
+        public QueryCondition next;
+        public boolean isDisjunction;
 
         public QueryCondition()
         {
             field = null;
             operator = Operator.NONE;
             constant = null;
+            next = null;
+            isDisjunction = false;
         }
 
         private boolean evaluate(String a, String b)
@@ -262,28 +266,40 @@ public class Server
 
         public boolean evaluate(Student student)
         {
+            boolean thisEval = false;
             Object val;
             try {
                 val = field.get(student);
 
+                boolean wasInteger = false;
                 if (constant instanceof Integer) {
                     if (val instanceof Department) {
                         val = ((Department) val).identifier;
-                        return evaluate((Integer) val, (Integer) constant);
+                        thisEval = evaluate((Integer) val, (Integer) constant);
+                        wasInteger = true;
+                    } else {
+                        try {
+                            thisEval = evaluate(Integer.parseInt(val.toString()), (Integer) constant);
+                            wasInteger = true;
+                        } catch (Exception e) { }
+                    }
+                }
+
+                if (!wasInteger) {
+                    if (val instanceof Department) {
+                        val = ((Department) val).name;
                     }
 
-                    try {
-                        return evaluate(Integer.parseInt(val.toString()), (Integer) constant);
-                    } catch (Exception e) { }
+                    thisEval = evaluate(val.toString(), constant.toString());
                 }
+            } catch (Exception e) { }
 
-                if (val instanceof Department) {
-                    val = ((Department) val).name;
-                }
+            if (next == null) return thisEval;
 
-                return evaluate(val.toString(), constant.toString());
-            } catch (Exception e) {
-                return false;
+            if (isDisjunction) {
+                return thisEval || next.evaluate(student);
+            } else {
+                return thisEval && next.evaluate(student);
             }
         }
     }
@@ -326,25 +342,24 @@ public class Server
             "!="  // 6
         };
 
-        ArrayList<QueryCondition> conditions = new ArrayList<QueryCondition>();
+        QueryCondition rootCondition = new QueryCondition();
+        QueryCondition condition = rootCondition;
 
         int i = 0;
-        while (i < split.length)
+        while (condition != null)
         {
-            QueryCondition condition = new QueryCondition();
-
             if (i >= split.length) {
-                return new QueryResponse("expected a field name at argument #{0}", i).serializeToString();
+                return new QueryResponse("expected a field name at argument #{0}", i).toString();
             }
 
             try {
                 condition.field = Student.class.getDeclaredField(split[i]);
             } catch (Exception e) {
-                return new QueryResponse("invalid field name \"{0}\" at argument #{1}", split[i], i).serializeToString();
+                return new QueryResponse("invalid field name \"{0}\" at argument #{1}", split[i], i).toString();
             }
 
             if (++i >= split.length) {
-                return new QueryResponse("expected an operator at argument #{0}", i).serializeToString();
+                return new QueryResponse("expected an operator at argument #{0}", i).toString();
             }
 
             for(int o = 0; o < validOperators.length; ++ o) {
@@ -355,11 +370,11 @@ public class Server
             }
 
             if (condition.operator == Operator.NONE) {
-                return new QueryResponse("invalid operator \"{0}\" at argument #{1}", split[i], i).serializeToString();
+                return new QueryResponse("invalid operator \"{0}\" at argument #{1}", split[i], i).toString();
             }
 
             if (++i >= split.length) {
-                return new QueryResponse("expected a constant value at argument #{0}", i).serializeToString();
+                return new QueryResponse("expected a constant value at argument #{0}", i).toString();
             }
 
             try {
@@ -368,25 +383,22 @@ public class Server
                 condition.constant = split[i];
             }
 
-            conditions.add(condition);
+            if (++i < split.length) {
+                if (!split[i].equals("or") && !split[i].equals("and")) {
+                    return new QueryResponse("expected either \"or\" or \"and\" between clauses at argument #{0}", i).toString();
+                }
 
-            ++i;
+                condition.next = new QueryCondition();
+                condition.isDisjunction = split[i++].equals("or");
+            }
+
+            condition = condition.next;
         }
 
         ArrayList<Student> matches = new ArrayList<Student>();
 
         for (Student student : _sDatabase) {
-            boolean match = true;
-            for (QueryCondition condition : conditions) {
-                if (!condition.evaluate(student)) {
-                    match = false;
-                    break;
-                }
-            }
-
-            if (match) {
-                matches.add(student);
-            }
+            if (rootCondition.evaluate(student)) matches.add(student);
         }
 
         Student[] arr = new Student[matches.size()];
