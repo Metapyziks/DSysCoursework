@@ -72,14 +72,21 @@ public class Client
         else log(SERVERS_DOWN_MSG);
     }
 
-    private static final String CONDITION_DESCRIPTION =
-          "conditions are separated by \"and\" or \"or\", and are of the form:\n\n"
-        + "    <fieldName> <operator> <value>\n\n"
-        + "conditions are assumed to be in disjunctive normal form\n"
-        + "operators include ==, !=, >=, <=, > and <";
+    private static final String CONDITIONS_DESCRIPTION =
+        "\n    <conditions> ::= <condition> | <condition> <connector> <conditions>\n" +
+        "\n    <connector> ::= \"and\" | \"or\"\n" +
+        "\n    <condition> ::= \"true\" | \"false\" | <fieldName> <operator> <value>\n" +
+        "\n    <operator> ::= \"==\" | \"!=\" | \"<=\" | \">=\" | \"<\" | \">\"\n" +
+        "\n    <fieldName> ::= \"identifier\" | \"firstName\" | \"lastName\"\n" +
+          "                    | \"department\" | \"year\" | \"totalCredit\"\n" +
+        "\nconditions are assumed to be in disjunctive normal form";
+
+    private static final String ASSIGNMENTS_DESCRIPTION =
+        "\n    <assignments> ::= <assignment> | <assignment> <assignments>\n" +
+        "\n    <assignment> ::= <fieldName> \"=\" <value>\n";
 
     @Command(description="selects all students from the database that match a set of conditions\n"
-        + CONDITION_DESCRIPTION,
+        + CONDITIONS_DESCRIPTION,
         usage="<conditions>")
     public static void cmd_select(Endpoint endpoint, String[] args)
     {
@@ -92,7 +99,7 @@ public class Client
     }
 
     @Command(description="deletes all students from the database that match a set of conditions\n"
-        + CONDITION_DESCRIPTION,
+        + CONDITIONS_DESCRIPTION,
         usage="<conditions>")
     public static void cmd_delete(Endpoint endpoint, String[] args)
     {
@@ -105,7 +112,7 @@ public class Client
     }
 
     @Command(description="updates all students from the database that match a set of conditions\n"
-        + CONDITION_DESCRIPTION,
+        + ASSIGNMENTS_DESCRIPTION + CONDITIONS_DESCRIPTION,
         usage="<assignments> where <conditions>")
     public static void cmd_update(Endpoint endpoint, String[] args)
     {
