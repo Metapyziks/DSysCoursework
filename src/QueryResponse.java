@@ -44,4 +44,20 @@ public class QueryResponse
         }
         return buffer.toString();
     }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer buffer = new StringBuffer();
+        if (success) {
+            for (Student student : students) {
+                buffer.append(student);
+                buffer.append("\n");
+            }
+        } else {
+            buffer.append("Syntax error: ");
+            buffer.append(message);
+        }
+        return buffer.toString();
+    }
 }

@@ -62,19 +62,24 @@ public class Endpoint
         return _sDepartments;
     }
 
+    private static Host _sMasterServer;
     public static Host getMasterServer()
     {
-        Host master = null;
+        if (_sMasterServer != null && _sMasterServer.isConnected()) {
+            return _sMasterServer;
+        }
+
+        _sMasterServer = null;
         int minID = Integer.MAX_VALUE;
         for (Host host : getHosts()) {
             int id = host.getIdentifier();
             if (id > 0 && id <= minID) {
                 minID = id;
-                master = host;
+                _sMasterServer = host;
             }
         }
 
-        return master;
+        return _sMasterServer;
     }
 
     public static Department getDepartment(int identifier)

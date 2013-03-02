@@ -47,19 +47,24 @@ public class Server
         return _sLocalServer;
     }
 
+    private static Host _sSlaveServer;
     private static Host getSlaveServer()
     {
-        Host next = null;
+        if (_sSlaveServer != null && _sSlaveServer.isConnected()) {
+            return _sSlaveServer;
+        }
+
+        _sSlaveServer = null;
         int minID = Integer.MAX_VALUE;
         for (Host host : getHosts()) {
             int id = host.getIdentifier();
             if (id > _sIdentifier && id <= minID) {
                 minID = id;
-                next = host;
+                _sSlaveServer = host;
             }
         }
 
-        return next;
+        return _sSlaveServer;
     }
 
     private static Host getServer(int identifier)
@@ -119,7 +124,6 @@ public class Server
     @Command(description = "prints the name and location of the current slave of this server")
     public static void cmd_get_slave(Endpoint endpoint, String[] args)
     {
-        log("Finding slave...");
         Host slave = getSlaveServer();
         if (slave != null) log("{0}", slave);
         else log("This server is last in the chain");
@@ -261,10 +265,20 @@ public class Server
             Object val;
             try {
                 val = field.get(student);
+
                 if (constant instanceof Integer) {
+                    if (val instanceof Department) {
+                        val = ((Department) val).identifier;
+                        return evaluate((Integer) val, (Integer) constant);
+                    }
+
                     try {
                         return evaluate(Integer.parseInt(val.toString()), (Integer) constant);
                     } catch (Exception e) { }
+                }
+
+                if (val instanceof Department) {
+                    val = ((Department) val).name;
                 }
 
                 return evaluate(val.toString(), constant.toString());
@@ -279,9 +293,19 @@ public class Server
     {
         try {
             Student student = Student.parse(this, str);
+
+            if (student.identifier <= 0) {
+                student.identifier = 1;
+                for (Student other : _sDatabase) {
+                    if (other.identifier >= student.identifier) {
+                        student.identifier = other.identifier + 1;
+                    }
+                }
+            }
+
             _sDatabase.add(student);
             propagate(str);
-            return "SUCCESS\n" + student.serializeToString() + "\n";
+            return "SUCCESS\n" + student.toString() + "\n";
         } catch (Exception e) {
             return "FAILURE\n";
         }
@@ -367,6 +391,6 @@ public class Server
 
         Student[] arr = new Student[matches.size()];
         matches.toArray(arr);
-        return new QueryResponse(arr).serializeToString();
+        return new QueryResponse(arr).toString();
     }
 }

@@ -22,6 +22,12 @@ public class Student
     {
         String[] parsed = StructuredFileReader.parseLine(str, 6);
 
+        if (parsed == null) {
+            parsed = StructuredFileReader.parseLine("\"0\" " + str, 6);
+        }
+
+        if (parsed == null) return null;
+
         int deptID = Integer.parseInt(parsed[3]);
         Department department = endpoint.getDepartment(deptID);
 
@@ -53,5 +59,12 @@ public class Student
         return MessageFormat.format("\"{0}\" \"{1}\" \"{2}\" \"{3}\" \"{4}\" \"{5}\"",
             identifier, escape(firstName), escape(lastName),
             department.identifier, year, totalCredit);
+    }
+
+    @Override
+    public String toString()
+    {
+        return MessageFormat.format("#{0} {1} {2}, {3}, year {4}, {5} credits",
+            identifier, firstName, lastName, department.name, year, totalCredit);
     }
 }
